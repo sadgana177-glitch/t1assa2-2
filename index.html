@@ -1,0 +1,455 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>تحليل المقدار الثلاثي</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link id="fonts" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@500;700;900&family=Tajawal:wght@400;500;700&display=swap">
+<style id="main-css">
+/* Layout concept: graph-paper notebook. A centered column, ink-blue headings, a yellow highlighter used only for the grade chip and the active step. */
+:root{
+  --bg:#f2f5fb;--paper:#ffffff;--ink:#0e1a3a;--muted:#56648a;--line:#d3dcef;--grid:#e1e8f5;
+  --brand:#1b4fd8;--brand-ink:#ffffff;--hi:#ffd23f;--hi-ink:#33280a;--soft:#e7edfc;
+  --ok:#0b7a46;--ok-bg:#dcf4e6;--bad:#b82a36;--bad-bg:#fde3e5;
+  --f-display:"Cairo",system-ui,"Segoe UI",sans-serif;--f-body:"Tajawal","Cairo",system-ui,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0b1226;--paper:#121c38;--ink:#e8edff;--muted:#9aa9d2;--line:#283760;--grid:#15203f;
+  --brand:#6f95ff;--brand-ink:#0a1230;--hi:#ffd23f;--hi-ink:#2b2100;--soft:#1a2a57;
+  --ok:#52d28d;--ok-bg:#11382a;--bad:#ff8a93;--bad-bg:#431f29;color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0b1226;--paper:#121c38;--ink:#e8edff;--muted:#9aa9d2;--line:#283760;--grid:#15203f;
+  --brand:#6f95ff;--brand-ink:#0a1230;--hi:#ffd23f;--hi-ink:#2b2100;--soft:#1a2a57;
+  --ok:#52d28d;--ok-bg:#11382a;--bad:#ff8a93;--bad-bg:#431f29;color-scheme:dark}
+*{box-sizing:border-box}
+body{background-color:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.75;
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:28px 28px;min-height:100vh}
+#app{max-width:1020px;margin-inline:auto;padding-block:20px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1,h2,h3{font-family:var(--f-display);line-height:1.3;margin:0;text-wrap:balance}
+p{margin:0}
+button,input{font:inherit;color:inherit}
+a{color:var(--brand)}
+:focus-visible{outline:3px solid var(--brand);outline-offset:2px}
+.m{unicode-bidi:isolate;direction:rtl;font-family:var(--f-display);font-weight:600;white-space:nowrap}
+.n{unicode-bidi:isolate;direction:ltr;display:inline-block;font-family:var(--f-display);font-weight:600}
+
+/* top / hero */
+.hero{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:20px;align-items:center;margin-bottom:22px}
+.grade{display:inline-block;background:var(--hi);color:var(--hi-ink);font-family:var(--f-display);font-weight:900;font-size:1.05rem;padding:2px 16px;border-radius:6px;transform:rotate(-1.5deg)}
+.hero h1{font-size:clamp(1.9rem,6vw,3rem);font-weight:900;margin-block:10px 4px}
+.by{color:var(--muted);font-weight:500}
+.tiles{width:min(220px,40vw);height:auto}
+.tiles .t1{fill:var(--brand)}.tiles .t2{fill:var(--hi)}.tiles .t3{fill:var(--soft);stroke:var(--line)}
+.tiles .l1{fill:var(--brand-ink)}.tiles .l2{fill:var(--hi-ink)}.tiles .l3,.tiles .l4{fill:var(--ink)}
+.tiles text{font-family:var(--f-display);font-weight:700;font-size:15px;text-anchor:middle;dominant-baseline:central}
+.tiles .l4{font-size:13px;fill:var(--muted)}
+@media(max-width:560px){.hero{grid-template-columns:1fr}.tiles{display:none}}
+
+.card{background:var(--paper);border:1.5px solid var(--line);border-radius:14px;padding:22px}
+.lockgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;align-items:start}
+@media(max-width:760px){.lockgrid{grid-template-columns:minmax(0,1fr)}}
+.card h2{font-size:1.25rem;margin-bottom:6px}
+.sub{color:var(--muted);font-size:.95rem}
+label.f{display:block;font-weight:700;margin-block:14px 6px}
+.in{width:100%;padding:12px 14px;border-radius:10px;border:1.5px solid var(--line);background:var(--bg);font-size:1.05rem}
+.in:focus{border-color:var(--brand);outline:none;box-shadow:0 0 0 3px color-mix(in srgb,var(--brand) 25%,transparent)}
+.pwrow{display:flex;gap:8px}.pwrow .in{flex:1;min-width:0}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:10px;padding:11px 22px;background:var(--brand);color:var(--brand-ink);font-weight:700;font-family:var(--f-display);cursor:pointer;min-height:46px}
+.btn:hover{filter:brightness(1.08)}
+.btn[disabled]{opacity:.45;cursor:not-allowed;filter:none}
+.btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+.btn.ghost:hover{border-color:var(--brand)}
+.btn.block{width:100%;margin-top:16px}
+.btn.ok{background:var(--ok);color:#fff}
+.err{color:var(--bad);font-weight:700;margin-top:10px;min-height:1.5em}
+.note{color:var(--muted);font-size:.92rem;margin-top:12px}
+
+/* contact column */
+.contacts{display:flex;flex-direction:column;gap:10px}
+.contact{display:flex;align-items:center;gap:14px;padding:12px 14px;border-radius:12px;background:var(--paper);border:1.5px solid var(--line);text-decoration:none;color:var(--ink)}
+.contact:hover{border-color:var(--brand);transform:translateY(-1px)}
+.contact b{font-family:var(--f-display);display:block;line-height:1.35}
+.contact small{color:var(--muted);display:block;line-height:1.4}
+.ico{flex:none;width:46px;height:46px;border-radius:12px;display:grid;place-items:center;color:#fff}
+.ico svg{width:26px;height:26px}
+.ico.wa{background:#1f9d55}.ico.tg{background:#2a8bd0}.ico.ig{background:linear-gradient(135deg,#f0883e,#d6336c 55%,#7a3fc4)}.ico.cm{background:#0b6b4a}
+
+/* main nav */
+.bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:18px}
+.brand{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.brand h2{font-size:1.2rem}
+.tabs{display:flex;gap:6px;background:var(--paper);border:1.5px solid var(--line);border-radius:12px;padding:5px;margin-bottom:18px}
+.tab{flex:1;border:0;background:transparent;border-radius:8px;padding:10px 14px;font-family:var(--f-display);font-weight:700;font-size:1.05rem;cursor:pointer;color:var(--muted)}
+.tab[aria-selected="true"]{background:var(--brand);color:var(--brand-ink)}
+.mini{display:flex;gap:8px;flex-wrap:wrap}
+.mini .btn{padding:6px 14px;min-height:38px;font-size:.95rem}
+
+/* reach block */
+.reach{background:var(--paper);border:1.5px solid var(--line);border-radius:14px;padding:16px 18px;margin-bottom:18px;display:flex;flex-direction:column;gap:6px}
+.reach .nm{font-family:var(--f-display);font-weight:900;font-size:1.15rem}
+.reach a{display:flex;flex-wrap:wrap;align-items:center;gap:10px;text-decoration:none;font-weight:700;padding:4px 0}
+.reach a span.go{background:var(--soft);color:var(--brand);border-radius:999px;padding:0 12px;font-size:.92rem;font-weight:700}
+.reach a:hover span.go{background:var(--brand);color:var(--brand-ink)}
+
+/* explanation */
+.secnav{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-bottom:18px}
+.sec{border:1.5px solid var(--line);background:var(--paper);border-radius:10px;padding:10px 12px;cursor:pointer;text-align:start;font-family:var(--f-display);font-weight:700;line-height:1.4;display:flex;gap:10px;align-items:baseline}
+.sec i{font-style:normal;color:var(--muted);font-weight:900}
+.sec[aria-current="true"]{border-color:var(--brand);background:var(--soft);color:var(--ink);box-shadow:inset 0 -3px 0 var(--brand)}
+.rule{background:var(--soft);border-radius:12px;padding:16px 18px;margin-bottom:18px;border-inline-start:6px solid var(--brand)}
+.rule h3{font-size:1.1rem;margin-bottom:4px}
+.exlist{display:grid;gap:16px}
+.ex{background:var(--paper);border:1.5px solid var(--line);border-radius:14px;padding:20px}
+.ex-n{display:inline-block;background:var(--hi);color:var(--hi-ink);font-family:var(--f-display);font-weight:900;border-radius:6px;padding:0 12px;font-size:.95rem}
+.ex-stmt{font-size:1.2rem;font-weight:700;margin-block:10px 8px}
+.step{display:flex;gap:12px;padding:12px 0;border-top:1px dashed var(--line)}
+.sn{flex:none;width:30px;height:30px;border-radius:50%;background:var(--brand);color:var(--brand-ink);display:grid;place-items:center;font-family:var(--f-display);font-weight:900;font-size:.95rem;line-height:1}
+.sb{min-width:0;flex:1}
+.line{margin-block:4px;overflow-x:auto;overflow-y:hidden}
+.res{display:inline-block;background:var(--hi);color:var(--hi-ink);border-radius:8px;padding:2px 14px;font-weight:700;margin-block:4px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-block:10px}
+.chip{border:1.5px solid var(--line);background:var(--bg);border-radius:10px;padding:6px 14px;cursor:pointer;font-weight:700;min-height:42px}
+.chip:hover:not([disabled]){border-color:var(--brand)}
+.chip.bad{background:var(--bad-bg);border-color:var(--bad);color:var(--bad)}
+.chip.good{background:var(--ok-bg);border-color:var(--ok);color:var(--ok)}
+.fb{font-weight:700;min-height:1.6em}.fb.bad{color:var(--bad)}.fb.good{color:var(--ok)}
+.ctl{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:12px}
+.hint{color:var(--muted);font-weight:500}
+.done{color:var(--ok);font-weight:700}
+
+/* quiz */
+.qhead{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-weight:700;margin-bottom:8px}
+.progress{height:10px;border-radius:999px;background:var(--line);overflow:hidden;margin-bottom:16px}
+.progress i{display:block;height:100%;background:var(--brand);transition:width .25s}
+.q-stmt{font-size:1.25rem;font-weight:700;margin-bottom:14px}
+.opts{display:grid;gap:10px}
+.opt{display:flex;align-items:center;gap:14px;text-align:start;border:1.5px solid var(--line);background:var(--bg);border-radius:12px;padding:10px 14px;cursor:pointer;min-height:54px;width:100%}
+.opt:hover{border-color:var(--brand)}
+.opt .ol{flex:none;width:32px;height:32px;border-radius:50%;border:1.5px solid var(--line);display:grid;place-items:center;font-family:var(--f-display);font-weight:900;background:var(--paper)}
+.opt .ot{min-width:0;overflow-x:auto;font-size:1.1rem}
+.opt[aria-checked="true"]{border-color:var(--brand);background:var(--soft)}
+.opt[aria-checked="true"] .ol{background:var(--brand);color:var(--brand-ink);border-color:var(--brand)}
+.score{font-family:var(--f-display);font-weight:900;font-size:clamp(2rem,8vw,3.2rem);line-height:1.2}
+.rvlist{list-style:none;padding:0;margin:16px 0 0;display:grid;gap:10px}
+.rv{border:1.5px solid var(--line);border-radius:12px;padding:12px 14px}
+.rv.ok{border-color:var(--ok);background:var(--ok-bg)}.rv.bad{border-color:var(--bad);background:var(--bad-bg)}
+.rv .tg{font-family:var(--f-display);font-weight:900}
+.rv div{overflow-x:auto}
+.confirm{background:var(--soft);border-radius:12px;padding:16px;margin-top:16px}
+.confirm b{font-family:var(--f-display);font-size:1.25rem}
+.foot{margin-top:28px}
+.foot h3{font-size:1rem;color:var(--muted);margin-bottom:10px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+<script type="application/json" id="cfg">{"h":"a6cc5e81d2bdbfb82e76dff07b0b13164c65fda227a860860e0a129265ba65dc"}</script>
+<div id="app" dir="rtl" lang="ar"></div>
+<script id="main-js">
+(function(){
+'use strict';
+var TITLE='تحليل المقدار الثلاثي';
+var RESET=':root{color-scheme:light;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}';
+var SALT='sd9|';
+var app=document.getElementById('app');
+var HASH='';
+try{HASH=JSON.parse(document.getElementById('cfg').textContent).h}catch(e){}
+
+/* ---------- helpers ---------- */
+var AR='٠١٢٣٤٥٦٧٨٩';
+var ar=function(n){return String(n).replace(/\d/g,function(d){return AR[+d]})};
+var ab=Math.abs;
+var esc=function(s){return String(s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})};
+var M=function(h){return '<span class="m">'+h+'</span>'};
+var N=function(h){return '<span class="n">'+h+'</span>'};
+var sn=function(n){return (n<0?'-':'')+ar(ab(n))};
+var NS=function(n){return N(sn(n))};
+function tm(c,v,first){var a=ab(c);var body=v?(a===1?v:ar(a)+v):ar(a);return first?((c<0?'-':'')+body):((c<0?' - ':' + ')+body)}
+function poly(parts){var s='',f=true;parts.forEach(function(p){if(!p[0])return;s+=tm(p[0],p[1],f);f=false});return s||'٠'}
+var P2=function(a,b,c){return poly([[a,'س²'],[b,'س'],[c,'']])};
+var P3=function(a,b,c){return poly([[a,'س³'],[b,'س²'],[c,'س']])};
+var lin=function(p,q){return '('+poly([[p,'س'],[q,'']])+')'};
+var gx=function(g){return g===1?'س':ar(g)+'س'};
+var gcd=function(x,y){return y?gcd(y,x%y):ab(x)};
+function pairs(P){var out=[],A=ab(P);for(var d=1;d*d<=A;d++){if(A%d)continue;var e=A/d;
+  if(P>0){out.push([d,e]);out.push([-d,-e])}else{out.push([d,-e]);if(d!==e)out.push([-d,e])}}return out}
+function sortF(x,y){return [x,y].sort(function(u,v){return u[0]-v[0]||u[1]-v[1]})}
+function expand(f1,f2){return [f1[0]*f2[0],f1[0]*f2[1]+f2[0]*f1[1],f1[1]*f2[1]]}
+function shuffle(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t}return a}
+
+/* ---------- sha-256 (so the password is never stored as plain text) ---------- */
+function sha(str){
+  var b=new TextEncoder().encode(str),l=b.length,n=((l+9+63)>>6)<<6,m=new Uint8Array(n);m.set(b);m[l]=0x80;
+  var dv=new DataView(m.buffer);dv.setUint32(n-4,(l*8)>>>0);dv.setUint32(n-8,Math.floor(l*8/4294967296));
+  var K=[],H=[],c=0;
+  for(var p=2;c<64;p++){var pr=true;for(var d=2;d*d<=p;d++)if(p%d===0){pr=false;break}if(!pr)continue;
+    if(c<8)H[c]=Math.floor((Math.sqrt(p)%1)*4294967296)>>>0;K[c]=Math.floor((Math.cbrt(p)%1)*4294967296)>>>0;c++}
+  var w=new Uint32Array(64),h=Uint32Array.from(H),rr=function(x,k){return (x>>>k)|(x<<(32-k))};
+  for(var o=0;o<n;o+=64){
+    for(var i=0;i<16;i++)w[i]=dv.getUint32(o+i*4);
+    for(i=16;i<64;i++){var s0=rr(w[i-15],7)^rr(w[i-15],18)^(w[i-15]>>>3),s1=rr(w[i-2],17)^rr(w[i-2],19)^(w[i-2]>>>10);w[i]=(w[i-16]+s0+w[i-7]+s1)>>>0}
+    var a=h[0],b2=h[1],c2=h[2],d2=h[3],e=h[4],f=h[5],g=h[6],hh=h[7];
+    for(i=0;i<64;i++){var S1=rr(e,6)^rr(e,11)^rr(e,25),ch=(e&f)^(~e&g),t1=(hh+S1+ch+K[i]+w[i])>>>0,
+      S0=rr(a,2)^rr(a,13)^rr(a,22),mj=(a&b2)^(a&c2)^(b2&c2),t2=(S0+mj)>>>0;
+      hh=g;g=f;f=e;e=(d2+t1)>>>0;d2=c2;c2=b2;b2=a;a=(t1+t2)>>>0}
+    h[0]=(h[0]+a)>>>0;h[1]=(h[1]+b2)>>>0;h[2]=(h[2]+c2)>>>0;h[3]=(h[3]+d2)>>>0;h[4]=(h[4]+e)>>>0;h[5]=(h[5]+f)>>>0;h[6]=(h[6]+g)>>>0;h[7]=(h[7]+hh)>>>0}
+  return Array.from(h,function(x){return x.toString(16).padStart(8,'0')}).join('');
+}
+
+/* ---------- explanation content (new numbers) ---------- */
+function groupSteps(a,b,c,p,q){
+  var tries=[[p,q],[q,p]];
+  for(var t=0;t<2;t++){var m=tries[t][0],n=tries[t][1],g1=gcd(a,m),k=a/g1;if(n%k)continue;var g2=n/k;
+    var br=lin(k,m/g1),f1=lin(g1,g2);
+    var split=poly([[a,'س²'],[m,'س'],[n,'س'],[c,'']]);
+    var grp=gx(g1)+br+(g2<0?' - ':' + ')+ar(ab(g2))+br;
+    return {split:split,grp:grp,f1:f1,f2:br}}
+  return null}
+function verify(f1,f2,a,b,c){
+  var e=expand(f1,f2);
+  return poly([[e[0],'س²'],[f1[0]*f2[1],'س'],[f2[0]*f1[1],'س'],[e[2],'']])+' = '+P2(a,b,c)}
+function exTri(a,b,c){
+  var P=a*c,pr=pairs(P).filter(function(x){return x[0]+x[1]===b})[0],p=pr[0],q=pr[1];
+  var steps=[];
+  if(a===1){
+    steps.push({h:'<div>نبحث عن عددين <b>حاصل ضربهما</b> يساوي الحد الأخير '+NS(c)+' و<b>مجموعهما</b> يساوي معامل س وهو '+NS(b)+'.</div>'});
+  }else{
+    steps.push({h:'<div>نضرب معامل س² في الحد الأخير: '+N(ar(a)+' × '+sn(c)+' = '+sn(P))+'. ونبحث عن عددين حاصل ضربهما '+NS(P)+' ومجموعهما معامل س وهو '+NS(b)+'.</div>'});
+  }
+  steps.push({pick:{P:P,S:b}});
+  if(a===1){
+    var f=sortF([1,p],[1,q]),f1=lin(1,f[0][1]),f2=lin(1,f[1][1]);
+    steps.push({h:'<div>العددان هما '+NS(p)+' و '+NS(q)+'، إذن:</div><div class="line"><span class="res">'+M(f1+f2)+'</span></div><div class="line">للتحقق: '+M(verify(f[0],f[1],a,b,c))+'</div>'});
+  }else{
+    var gs=groupSteps(a,b,c,p,q);
+    steps.push({h:'<div>نفكّ الحد الأوسط إلى العددين: '+M(poly([[a,'س²'],[b,'س'],[c,'']]))+' = '+M(gs.split)+'</div>'});
+    var same=gs.f1===gs.f2;
+    steps.push({h:'<div>نخرج عاملاً مشتركاً من كل مجموعة: </div><div class="line">'+M(gs.grp)+'</div><div>القوس المشترك يتكرر، فنأخذه عاملاً:</div><div class="line"><span class="res">'+M(gs.f1+gs.f2+(same?' = '+gs.f1+'²':''))+'</span></div>'});
+  }
+  return {stmt:'حلل: '+M(P2(a,b,c)),steps:steps}}
+function exRect(r,s,L,mode){
+  var W=(L===r)?s:r,area=P2(1,r+s,r*s),steps=[];
+  var stmt;
+  if(mode==='width')stmt='مستطيل مساحته ('+M(area)+') وحدة مربعة، وطوله '+M(lin(1,L))+'. أوجد عرضه.';
+  else if(mode==='perim')stmt='مستطيل مساحته ('+M(area)+') وحدة مربعة، وطوله '+M(lin(1,L))+'. أوجد محيطه.';
+  else stmt='نافذة مستطيلة مساحتها ('+M(area)+') وحدة مربعة. أوجد بعديها.';
+  steps.push({h:'<div>المساحة = الطول × العرض. لذلك نحلل المساحة إلى عاملين. نبحث عن عددين حاصل ضربهما '+NS(r*s)+' ومجموعهما '+NS(r+s)+'.</div>'});
+  steps.push({pick:{P:r*s,S:r+s}});
+  var fa=lin(1,r)+lin(1,s);
+  if(mode==='width')steps.push({h:'<div>المساحة = '+M(fa)+' والطول = '+M(lin(1,L))+'، فالعرض هو العامل الآخر:</div><div class="line"><span class="res">العرض = '+M(lin(1,W))+'</span></div>'});
+  else if(mode==='perim')steps.push({h:'<div>المساحة = '+M(fa)+' والطول = '+M(lin(1,L))+' إذن العرض = '+M(lin(1,W))+'.</div><div class="line">المحيط = '+M(ar(2)+'['+lin(1,L)+' + '+lin(1,W)+']'+' = '+ar(2)+'('+poly([[2,'س'],[L+W,'']])+')')+'</div><div class="line"><span class="res">المحيط = '+M(poly([[4,'س'],[2*(L+W),'']]))+'</span></div>'});
+  else steps.push({h:'<div>المساحة = '+M(fa)+'، فبعدا النافذة هما العاملان:</div><div class="line"><span class="res">البعدان: '+M(lin(1,r))+' و '+M(lin(1,s))+'</span></div>'});
+  return {stmt:stmt,steps:steps}}
+function exCub(g,r,s){
+  var vol=P3(g,g*(r+s),g*r*s),inner=P2(1,r+s,r*s),steps=[];
+  steps.push({h:'<div>نخرج العامل المشترك '+M(gx(g))+' أولاً:</div><div class="line">'+M(vol+' = '+gx(g)+'('+inner+')')+'</div><div>ثم نحلل ما بداخل القوس: نبحث عن عددين حاصل ضربهما '+NS(r*s)+' ومجموعهما '+NS(r+s)+'.</div>'});
+  steps.push({pick:{P:r*s,S:r+s}});
+  steps.push({h:'<div>الحجم = '+M(gx(g)+lin(1,r)+lin(1,s))+'، والأبعاد هي العوامل الثلاثة:</div><div class="line"><span class="res">الأبعاد: '+M(gx(g))+' ، '+M(lin(1,r))+' ، '+M(lin(1,s))+'</span></div>'});
+  return {stmt:'شبه مكعب حجمه ('+M(vol)+') وحدة مكعبة. أوجد أبعاده.',steps:steps}}
+
+var SECS=[
+ {name:'إشارتان موجبتان',rule:'<h3>جـ موجبة وب موجبة</h3><p>العددان المطلوبان <b>موجبان</b>. ابحث عن عددين حاصل ضربهما الحد الأخير ومجموعهما معامل س، ثم اكتب <span class="m">(س + أ)(س + ب)</span>.</p>',
+  ex:[exTri(1,6,8),exTri(1,10,21),exTri(1,13,36)]},
+ {name:'إشارتان مختلفتان',rule:'<h3>جـ سالبة</h3><p>حاصل الضرب سالب، فالعددان <b>إشارتاهما مختلفتان</b>. العدد الأكبر قيمة مطلقة تكون إشارته مثل إشارة معامل س.</p>',
+  ex:[exTri(1,4,-12),exTri(1,-5,-36),exTri(1,6,-40)]},
+ {name:'إشارتان سالبتان',rule:'<h3>جـ موجبة وب سالبة</h3><p>حاصل الضرب موجب والمجموع سالب، فالعددان <b>سالبان</b> معاً، ونكتب <span class="m">(س - أ)(س - ب)</span>.</p>',
+  ex:[exTri(1,-8,12),exTri(1,-12,27),exTri(1,-15,54)]},
+ {name:'معامل س² لا يساوي ١',rule:'<h3>التحليل بالتجميع</h3><p>نحسب <b>أ × جـ</b> ونبحث عن عددين حاصل ضربهما هذا الناتج ومجموعهما معامل س. ثم نفكّ الحد الأوسط ونخرج عاملاً مشتركاً من كل مجموعة.</p>',
+  ex:[exTri(2,7,3),exTri(3,-10,3),exTri(6,-7,-3),exTri(9,-24,16)]},
+ {name:'مساحة المستطيل',rule:'<h3>مساحة المستطيل = الطول × العرض</h3><p>إذا كانت المساحة مقداراً ثلاثياً، فتحليلها يعطينا البعدين. ومحيط المستطيل = ٢ × (الطول + العرض).</p>',
+  ex:[exRect(3,7,7,'width'),exRect(4,9,9,'perim'),exRect(5,6,0,'dims')]},
+ {name:'حجم شبه المكعب',rule:'<h3>الحجم = الطول × العرض × الارتفاع</h3><p>أخرج <b>العامل المشترك</b> أولاً، ثم حلّل المقدار الثلاثي الباقي. العوامل الثلاثة هي الأبعاد.</p>',
+  ex:[exCub(3,3,4),exCub(2,2,5),exCub(5,3,3)]}
+];
+
+/* ---------- quiz bank (same ideas, different numbers) ---------- */
+function pickDistinct(correctKey,cands,seen,k){var out=[];cands.forEach(function(c){if(out.length>=k)return;if(c.key===correctKey||seen[c.h])return;seen[c.h]=1;out.push({h:c.h,ok:false})});return out}
+function qFac(f1,f2){
+  var e=expand(f1,f2),p1=f1[0],q1=f1[1],p2=f2[0],q2=f2[1];
+  var fs=function(x,y){return sortF(x,y).map(function(f){return lin(f[0],f[1])}).join('')};
+  var cands=[[[p1,-q1],[p2,-q2]],[[p1,q1],[p2,-q2]],[[p1,-q1],[p2,q2]],[[p1,q2],[p2,q1]],[[p1,q1+1],[p2,q2-1]],[[p1,q1+2],[p2,q2-2]]].map(function(c){return {h:M(fs(c[0],c[1])),key:expand(c[0],c[1]).join(',')}});
+  var correct=M(fs(f1,f2)),seen={};seen[correct]=1;
+  return {stmt:'حلل: '+M(P2(e[0],e[1],e[2])),opts:[{h:correct,ok:true}].concat(pickDistinct(e.join(','),cands,seen,3))}}
+function qWidth(r,s,L){
+  var W=L===r?s:r,cands=[-W,L,r+s,W+2,W+L].map(function(q){return {h:M(lin(1,q)),key:'k'+q}});
+  var correct=M(lin(1,W)),seen={};seen[correct]=1;
+  return {stmt:'مستطيل مساحته ('+M(P2(1,r+s,r*s))+') وحدة مربعة، وطوله '+M(lin(1,L))+'. أوجد عرضه.',opts:[{h:correct,ok:true}].concat(pickDistinct('k'+W,cands,seen,3))}}
+function qPerim(r,s,L){
+  var W=L===r?s:r,k=L+W,cands=[poly([[2,'س'],[k,'']]),poly([[4,'س'],[k,'']]),poly([[2,'س'],[2*k,'']]),poly([[4,'س'],[L*W,'']]),poly([[4,'س'],[2*k+2,'']])].map(function(t){return {h:M(t),key:t}});
+  var ct=poly([[4,'س'],[2*k,'']]),correct=M(ct),seen={};seen[correct]=1;
+  return {stmt:'مستطيل مساحته ('+M(P2(1,r+s,r*s))+') وحدة مربعة، وطوله '+M(lin(1,L))+'. أوجد محيطه.',opts:[{h:correct,ok:true}].concat(pickDistinct(ct,cands,seen,3))}}
+function qDims(r,s){
+  var fmt=function(x,y){return M(lin(1,x))+' و '+M(lin(1,y))};
+  var cands=[[-r,-s],[r-2,s+2],[r,-s],[r+s,r*s]].map(function(c){return {h:fmt(c[0],c[1]),key:c[0]+','+c[1]}});
+  var correct=fmt(r,s),seen={};seen[correct]=1;
+  return {stmt:'نافذة مستطيلة مساحتها ('+M(P2(1,r+s,r*s))+') وحدة مربعة. أوجد بعديها.',opts:[{h:correct,ok:true}].concat(pickDistinct(r+','+s,cands,seen,3))}}
+function qCub(g,r,s){
+  var fmt=function(gg,x,y){return M((gg?gx(gg):'س')+'، '+lin(1,x)+'، '+lin(1,y))};
+  var cands=[[0,r,s],[g,-r,-s],[g,r+s,r*s],[g,r,-s],[g+1,r,s]].map(function(c){return {h:fmt(c[0],c[1],c[2]),key:c.join(',')}});
+  var correct=fmt(g,r,s),seen={};seen[correct]=1;
+  return {stmt:'شبه مكعب حجمه ('+M(P3(g,g*(r+s),g*r*s))+') وحدة مكعبة. أوجد أبعاده.',opts:[{h:correct,ok:true}].concat(pickDistinct([g,r,s].join(','),cands,seen,3))}}
+function bank(){return [
+  qFac([1,5],[1,6]),qFac([1,2],[1,7]),qFac([1,8],[1,-5]),qFac([1,-7],[1,5]),qFac([1,9],[1,-3]),
+  qFac([1,-4],[1,-5]),qFac([1,-4],[1,-7]),qFac([2,3],[1,2]),qFac([3,-5],[1,-2]),qFac([5,-2],[1,1]),
+  qWidth(2,10,10),qPerim(3,12,12),qDims(6,8),qCub(2,3,5)]}
+
+/* ---------- icons & contact blocks ---------- */
+var IC={
+ wa:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 0 0-7.8 13.4L3 21l4.7-1.2A9 9 0 1 0 12 3z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M9 8.5c.3 2.6 2.9 5.2 5.5 5.5l1.2-1.3-2-1-.9.8c-.9-.4-1.7-1.2-2.1-2.1l.8-.9-1-2z" fill="currentColor"/></svg>',
+ tg:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21.5 3.5 2.5 10.8l5.3 2 2 6.2 3-3.8 4.8 3.6z" fill="currentColor"/></svg>',
+ ig:'<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="17" cy="7" r="1.2" fill="currentColor"/></svg>',
+ cm:'<svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="8.5" r="3"/><circle cx="17" cy="9.5" r="2.4"/><path d="M3 19c0-3 2.5-5 6-5s6 2 6 5M15.5 14c3 0 5.500 1.500 5.500 4.500"/></g></svg>'};
+var LNK={
+ q:'https://wa.me/96569943365',
+ tg:'https://t.me/+pjyOcLAg1NY3ZTRk',
+ ig:'https://www.instagram.com/seddd.ra?avpt=MWhodWRzcWlseTE5cQ%3D%3D&utm_source=qr',
+ cm:'https://chat.whatsapp.com/EvF5xxo70IkLfv2zuS9FWO',
+ w2:'https://wa.me/message/3SK6HSHQFVALJ1'};
+function contacts(){
+  var row=function(cls,ic,href,t,s){return '<a class="contact" href="'+esc(href)+'" target="_blank" rel="noopener noreferrer"><span class="ico '+cls+'">'+IC[ic]+'</span><span><b>'+t+'</b><small>'+s+'</small></span></a>'};
+  return '<div class="contacts">'
+   +row('wa','wa',LNK.q,'للاستفسار',N('+96569943365')+' · واتس آب')
+   +row('tg','tg',LNK.tg,'انضم هنا للمزيد من الملفات','قروب تيليجرام')
+   +row('ig','ig',LNK.ig,'للمزيد من الاختبارات','إنستجرام')
+   +row('cm','cm',LNK.cm,'انضم إلى مجتمع الواتس آب','مجتمع واتس آب')+'</div>'}
+function reach(){
+  return '<div class="reach"><div class="nm">مهندسة الرياضيات</div>'
+   +'<a href="'+LNK.q+'" target="_blank" rel="noopener noreferrer"><span class="n">+96569943365</span><span class="go">للتواصل اضغط هنا</span></a>'
+   +'<a href="'+LNK.w2+'" target="_blank" rel="noopener noreferrer"><span class="n">+٢٠١٠٢٣٠٨٣٢٢٧</span><span class="go">للتواصل اضغط هنا</span></a></div>'}
+function heroSVG(){
+  return '<svg class="tiles" viewBox="0 0 230 190" role="img" aria-label="نموذج المساحة لتحليل س² + ٧س + ١٢"><rect class="t1" x="34" y="26" width="96" height="96" rx="4"/><rect class="t2" x="130" y="26" width="76" height="96" rx="4"/><rect class="t2" x="34" y="122" width="96" height="48" rx="4"/><rect class="t3" x="130" y="122" width="76" height="48" rx="4"/>'
+   +'<text class="l1" x="82" y="74">س²</text><text class="l2" x="168" y="74">٤س</text><text class="l2" x="82" y="146">٣س</text><text class="l3" x="168" y="146">١٢</text>'
+   +'<text class="l4" x="82" y="11">س</text><text class="l4" x="168" y="11">٤</text><text class="l4" x="16" y="74">س</text><text class="l4" x="16" y="146">٣</text></svg>'}
+
+/* ---------- state ---------- */
+var ss={get:function(k){try{return sessionStorage.getItem(k)}catch(e){return null}},set:function(k,v){try{sessionStorage.setItem(k,v)}catch(e){}}};
+var S={screen:'lock',tab:'learn',sec:0,canEdit:false,err:'',exs:{},tMsg:'',tBusy:false,
+  q:{phase:'intro',name:'',draft:'',list:[],i:0,ans:[]}};
+S.unlocked=false;
+
+/* ---------- views ---------- */
+function lockView(){
+  return '<header class="hero"><div><span class="grade">الصف التاسع 9</span><h1>'+TITLE+'</h1><p class="by">مهندسة الرياضيات</p></div>'+heroSVG()+'</header>'
+  +'<div class="lockgrid"><section class="card"><h2>أدخل كلمة السر</h2><p class="sub">اطلب كلمة السر من معلمتك لبدء الشرح التفاعلي والاختبار.</p>'
+  +'<form data-form="pw" autocomplete="off"><label class="f" for="pw">كلمة السر</label><div class="pwrow"><input class="in" id="pw" type="password" autocomplete="off" required><button type="button" class="btn ghost" data-act="togglepw" aria-label="إظهار كلمة السر">إظهار</button></div>'
+  +'<div class="err" role="alert">'+esc(S.err)+'</div><button class="btn block" type="submit">دخول</button></form>'
+  +(S.canEdit?'<p class="note"><button class="btn ghost" data-act="teacher">لوحة المعلمة</button></p>':'')+'</section>'
+  +'<section aria-label="روابط التواصل">'+contacts()+'</section></div>'}
+function headerBar(){
+  return '<div class="bar"><div class="brand"><span class="grade">الصف التاسع 9</span><h2>'+TITLE+'</h2></div><div class="mini">'
+   +(S.canEdit?'<button class="btn ghost" data-act="teacher">لوحة المعلمة</button>':'')+'<button class="btn ghost" data-act="logout">خروج</button></div></div>'
+   +'<div class="tabs" role="tablist"><button class="tab" role="tab" aria-selected="'+(S.tab==='learn')+'" data-act="tab" data-t="learn">شرح تفاعلي</button><button class="tab" role="tab" aria-selected="'+(S.tab==='quiz')+'" data-act="tab" data-t="quiz">الاختبار</button></div>'}
+function pickHTML(si,ei,pk,st){
+  var prs=pairs(pk.P),h='<div class="step"><span class="sn">'+ar(0)+'</span><div class="sb"></div></div>';
+  var chips=prs.map(function(p,i){var t=st.tried.indexOf(i)>=0,good=t&&p[0]+p[1]===pk.S;
+    return '<button class="chip'+(t?(good?' good':' bad'):'')+'" data-act="pick" data-s="'+si+'" data-e="'+ei+'" data-i="'+i+'"'+(st.solved?' disabled':'')+'>'+NS(p[0])+' و '+NS(p[1])+'</button>'}).join('');
+  var fb='';
+  if(st.last!==null&&st.last!==undefined){var p=prs[st.last],sum=p[0]+p[1];
+    fb=sum===pk.S?'<p class="fb good">صحيح ✓ '+N(sn(p[0])+' + '+sn(p[1])+' = '+sn(sum))+'</p>':'<p class="fb bad">'+N(sn(p[0])+' + '+sn(p[1])+' = '+sn(sum))+' والمطلوب '+NS(pk.S)+'. جرّب عددين آخرين.</p>'}
+  return '<div class="sb-in"><p>اضغط على العددين اللذين حاصل ضربهما '+NS(pk.P)+' ومجموعهما '+NS(pk.S)+':</p><div class="chips">'+chips+'</div>'+fb+'</div>'}
+function getEx(si,ei){var k=si+'-'+ei;if(!S.exs[k])S.exs[k]={k:0,tried:[],solved:false,last:null};return S.exs[k]}
+function cardHTML(si,ei){
+  var st=getEx(si,ei),d=SECS[si].ex[ei],h='<span class="ex-n">مثال '+ar(ei+1)+'</span><p class="ex-stmt">'+d.stmt+'</p>';
+  d.steps.forEach(function(s,i){if(i>=st.k)return;
+    h+='<div class="step"><span class="sn">'+ar(i+1)+'</span><div class="sb">'+(s.pick?pickHTML(si,ei,s.pick,st):s.h)+'</div></div>'});
+  var cur=st.k>0?d.steps[st.k-1]:null,blocked=cur&&cur.pick&&!st.solved,fin=st.k>=d.steps.length;
+  h+='<div class="ctl">';
+  if(st.k===0)h+='<button class="btn" data-act="exnext" data-s="'+si+'" data-e="'+ei+'">ابدأ الحل</button>';
+  else if(fin)h+='<span class="done">انتهى المثال ✓</span><button class="btn ghost" data-act="exreset" data-s="'+si+'" data-e="'+ei+'">أعد المثال</button>';
+  else if(blocked)h+='<span class="hint">اختر العددين الصحيحين لتنتقل للخطوة التالية.</span>';
+  else h+='<button class="btn" data-act="exnext" data-s="'+si+'" data-e="'+ei+'">الخطوة التالية</button>';
+  return h+'</div>'}
+function learnView(){
+  var sec=SECS[S.sec];
+  var nav=SECS.map(function(s,i){return '<button class="sec" data-act="sec" data-i="'+i+'" aria-current="'+(i===S.sec)+'"><i>'+ar(i+1)+'</i><span>'+s.name+'</span></button>'}).join('');
+  var cards=sec.ex.map(function(_,i){return '<article class="ex" id="ex-'+S.sec+'-'+i+'">'+cardHTML(S.sec,i)+'</article>'}).join('');
+  return reach()+'<p class="sub" style="margin-bottom:14px">اختر قسماً، ثم حلّ كل مثال خطوة بخطوة. أنت من يختار العددين المناسبين.</p><div class="secnav">'+nav+'</div><div class="rule">'+sec.rule+'</div><div class="exlist">'+cards+'</div>'}
+var LET=['أ','ب','ج','د'];
+function quizView(){
+  var Q=S.q;
+  if(Q.phase==='intro'||Q.phase==='confirm'){
+    var body=Q.phase==='intro'
+      ?'<label class="f" for="stuName">اكتب اسمك الكامل (إجباري)</label><input class="in" id="stuName" type="text" autocomplete="off" maxlength="60" value="'+esc(Q.draft)+'"><button class="btn block" id="qgo" data-act="qstart"'+(Q.draft.trim().length<3?' disabled':'')+'>ابدأ الاختبار</button><p class="note">لا يمكن بدء الاختبار قبل كتابة الاسم.</p>'
+      :'<div class="confirm"><p>تأكيد الاسم قبل البدء:</p><p><b>'+esc(Q.draft.trim())+'</b></p><p class="sub">بعد البدء لا يمكن تغيير الاسم. هل هو صحيح؟</p><div class="ctl"><button class="btn" data-act="qconfirm">نعم، تأكيد وابدأ</button><button class="btn ghost" data-act="qedit">تعديل الاسم</button></div></div>';
+    return reach()+'<section class="card"><h2>الاختبار</h2><p class="sub">'+ar(bank().length)+' سؤالاً من نوع الاختيار من متعدد على أفكار الشرح. أجب عن كل سؤال قبل الانتقال للتالي.</p>'+body+'</section>'}
+  if(Q.phase==='run'){
+    var cur=Q.list[Q.i],tot=Q.list.length,sel=Q.ans[Q.i];
+    var opts=cur.opts.map(function(o,i){return '<button class="opt" role="radio" aria-checked="'+(sel===i)+'" data-act="qopt" data-i="'+i+'"><span class="ol">'+LET[i]+'</span><span class="ot">'+o.h+'</span></button>'}).join('');
+    var last=Q.i===tot-1;
+    return '<div class="qhead"><span>'+esc(Q.name)+'</span><span>السؤال '+ar(Q.i+1)+' من '+ar(tot)+'</span></div><div class="progress" aria-hidden="true"><i style="width:'+Math.round((Q.i+(sel!==undefined?1:0))/tot*100)+'%"></i></div>'
+      +'<section class="card"><p class="q-stmt">'+cur.stmt+'</p><div class="opts" role="radiogroup">'+opts+'</div><div class="ctl">'
+      +(Q.i>0?'<button class="btn ghost" data-act="qprev">السابق</button>':'')
+      +'<button class="btn" data-act="'+(last?'qfinish':'qnext')+'"'+(sel===undefined?' disabled':'')+'>'+(last?'تسليم الإجابات':'التالي')+'</button></div></section>'}
+  var tot2=Q.list.length,sc=Q.list.reduce(function(a,q,i){return a+(q.opts[Q.ans[i]]&&q.opts[Q.ans[i]].ok?1:0)},0),pct=Math.round(sc/tot2*100);
+  var msg=pct>=90?'ممتاز! أداء رائع.':pct>=75?'جيد جداً، أحسنت.':pct>=50?'جيد، راجع الأقسام التي أخطأت فيها.':'راجع الشرح التفاعلي ثم أعد المحاولة.';
+  var rv=Q.list.map(function(q,i){var a=q.opts[Q.ans[i]],ok=a&&a.ok,cor=q.opts.filter(function(o){return o.ok})[0];
+    return '<li class="rv '+(ok?'ok':'bad')+'"><span class="tg">سؤال '+ar(i+1)+(ok?' ✓':' ✗')+'</span><div>'+q.stmt+'</div><div>إجابتك: '+(a?a.h:'—')+'</div>'+(ok?'':'<div>الإجابة الصحيحة: '+cor.h+'</div>')+'</li>'}).join('');
+  var txt='الاسم: '+Q.name+'\nالنتيجة: '+ar(sc)+' من '+ar(tot2)+' ('+ar(pct)+'٪)\nاختبار '+TITLE+' - الصف التاسع';
+  return '<section class="card"><p class="sub">'+esc(Q.name)+'</p><div class="score">'+ar(sc)+' من '+ar(tot2)+' <span class="sub">('+ar(pct)+'٪)</span></div><p><b>'+msg+'</b></p>'
+    +'<div class="ctl"><a class="btn" href="'+LNK.q+'?text='+encodeURIComponent(txt)+'" target="_blank" rel="noopener noreferrer">أرسل نتيجتك للمعلمة</a><button class="btn ghost" data-act="qcopy">نسخ النتيجة</button><button class="btn ghost" data-act="qretry">إعادة الاختبار</button></div><p class="fb good" id="copyfb"></p>'
+    +'<ul class="rvlist">'+rv+'</ul></section><div style="margin-top:18px">'+reach()+'</div>'}
+function mainView(){
+  return headerBar()+(S.tab==='learn'?learnView():quizView())+'<div class="foot"><h3>تابعنا</h3>'+contacts()+'</div>'}
+function teacherView(){
+  return '<div class="bar"><div class="brand"><span class="grade">الصف التاسع 9</span><h2>لوحة المعلمة</h2></div><div class="mini"><button class="btn ghost" data-act="back">رجوع</button></div></div>'
+   +'<section class="card"><h2>تغيير كلمة السر</h2><p class="sub">كلمة السر هذه يدخل بها الطلاب إلى الشرح التفاعلي والاختبار. تُحفظ بصيغة مشفرة ولا يمكن عرضها بعد الحفظ.</p>'
+   +'<form data-form="tpw" autocomplete="off"><label class="f" for="np1">كلمة السر الجديدة (٤ أحرف على الأقل)</label><input class="in" id="np1" type="password" autocomplete="new-password" required minlength="4">'
+   +'<label class="f" for="np2">أعد كتابة كلمة السر</label><input class="in" id="np2" type="password" autocomplete="new-password" required minlength="4">'
+   +'<div class="err" role="alert">'+esc(S.tMsg)+'</div><button class="btn block" type="submit"'+(S.tBusy?' disabled':'')+'>'+(S.tBusy?'جارٍ الحفظ...':'حفظ كلمة السر')+'</button></form>'
+   +'<p class="note">بعد الحفظ تتحدث الصفحة لجميع الطلاب، ويحتاجون كلمة السر الجديدة عند الدخول.</p></section>'}
+function draw(){app.innerHTML=S.screen==='lock'?lockView():S.screen==='teacher'?teacherView():mainView()}
+
+/* ---------- save password by republishing this page ---------- */
+function buildDoc(h){
+  var css=document.getElementById('main-css').textContent,js=document.getElementById('main-js').textContent,fonts=document.getElementById('fonts').outerHTML;
+  return '<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>'+RESET+'</style></head><body>'
+   +'<title>'+TITLE+'</title><meta name="claude:viewport-fit-sides" content="cover">'+fonts+'<style id="main-css">'+css+'</style>'
+   +'<script type="application/json" id="cfg">'+JSON.stringify({h:h})+'<\/script><div id="app" dir="rtl" lang="ar"></div><script id="main-js">'+js+'<\/script></body></html>'}
+async function savePw(pw){
+  var art=await window.claude.use('artifact');if(!art)throw {code:'unavailable'};
+  await art.publish(buildDoc(sha(SALT+pw)))}
+
+/* ---------- events ---------- */
+function redrawCard(si,ei){var el=document.getElementById('ex-'+si+'-'+ei);if(el)el.innerHTML=cardHTML(si,ei)}
+app.addEventListener('click',function(ev){
+  var t=ev.target.closest('[data-act]');if(!t)return;var a=t.dataset.act,Q=S.q;
+  if(a==='togglepw'){var i=document.getElementById('pw');i.type=i.type==='password'?'text':'password';t.textContent=i.type==='password'?'إظهار':'إخفاء'}
+  else if(a==='tab'){S.tab=t.dataset.t;draw()}
+  else if(a==='sec'){S.sec=+t.dataset.i;draw()}
+  else if(a==='exnext'){var st=getEx(+t.dataset.s,+t.dataset.e);st.k++;redrawCard(+t.dataset.s,+t.dataset.e)}
+  else if(a==='exreset'){S.exs[t.dataset.s+'-'+t.dataset.e]=null;redrawCard(+t.dataset.s,+t.dataset.e)}
+  else if(a==='pick'){var si=+t.dataset.s,ei=+t.dataset.e,idx=+t.dataset.i,st2=getEx(si,ei),pk=SECS[si].ex[ei].steps.filter(function(x){return x.pick})[0].pick,p=pairs(pk.P)[idx];
+    if(st2.tried.indexOf(idx)<0)st2.tried.push(idx);st2.last=idx;if(p[0]+p[1]===pk.S)st2.solved=true;redrawCard(si,ei)}
+  else if(a==='qstart'){if(Q.draft.trim().length>=3){Q.phase='confirm';draw()}}
+  else if(a==='qedit'){Q.phase='intro';draw()}
+  else if(a==='qconfirm'){Q.name=Q.draft.trim();Q.list=shuffle(bank()).map(function(q){return {stmt:q.stmt,opts:shuffle(q.opts)}});Q.i=0;Q.ans=[];Q.phase='run';draw();window.scrollTo(0,0)}
+  else if(a==='qopt'){Q.ans[Q.i]=+t.dataset.i;draw()}
+  else if(a==='qnext'){Q.i++;draw();window.scrollTo(0,0)}
+  else if(a==='qprev'){Q.i--;draw();window.scrollTo(0,0)}
+  else if(a==='qfinish'){Q.phase='done';draw();window.scrollTo(0,0)}
+  else if(a==='qretry'){Q.phase='confirm';draw();window.scrollTo(0,0)}
+  else if(a==='qcopy'){var tx='الاسم: '+Q.name+'\nالنتيجة: '+ar(Q.list.reduce(function(s,q,i){return s+(q.opts[Q.ans[i]]&&q.opts[Q.ans[i]].ok?1:0)},0))+' من '+ar(Q.list.length);
+    var fb=document.getElementById('copyfb');
+    (navigator.clipboard&&navigator.clipboard.writeText?navigator.clipboard.writeText(tx):Promise.reject()).then(function(){fb.textContent='تم نسخ النتيجة ✓'},function(){fb.textContent='تعذر النسخ تلقائياً. اكتب نتيجتك وأرسلها لمعلمتك.'})}
+  else if(a==='logout'){S.unlocked=false;S.screen='lock';S.q={phase:'intro',name:'',draft:'',list:[],i:0,ans:[]};draw()}
+  else if(a==='teacher'){S.tMsg='';S.screen='teacher';draw()}
+  else if(a==='back'){S.screen=S.unlocked?'main':'lock';draw()}
+});
+app.addEventListener('input',function(ev){
+  if(ev.target.id==='stuName'){S.q.draft=ev.target.value;var b=document.getElementById('qgo');if(b)b.disabled=S.q.draft.trim().length<3}});
+app.addEventListener('submit',async function(ev){
+  ev.preventDefault();var f=ev.target.dataset.form;
+  if(f==='pw'){var v=document.getElementById('pw').value;
+    if(HASH&&sha(SALT+v)===HASH){S.unlocked=true;S.screen='main';S.err=''}else S.err='كلمة السر غير صحيحة، حاول مرة أخرى.';
+    draw();var i=document.getElementById('pw');if(i&&S.err)i.focus()}
+  else if(f==='tpw'){var a=document.getElementById('np1').value,b=document.getElementById('np2').value;
+    if(a.length<4){S.tMsg='كلمة السر قصيرة. اكتب ٤ أحرف على الأقل.';draw();return}
+    if(a!==b){S.tMsg='الكلمتان غير متطابقتين.';draw();return}
+    S.tBusy=true;S.tMsg='';draw();
+    try{await savePw(a);S.tBusy=false;S.tMsg='تم الحفظ.';draw()}
+    catch(e){S.tBusy=false;var c=e&&e.code;S.tMsg=c==='conflict'?'تم تحديث الصفحة من مكان آخر. أعد المحاولة بعد التحديث.':(c==='not_writer'||c==='not_granted')?'هذا الحساب لا يملك صلاحية تعديل الصفحة.':'تعذر الحفظ الآن. حاول مرة أخرى بعد قليل.';draw()}}
+});
+
+draw();
+(async function(){try{var cl=window.claude;if(!cl||!cl.use)return;var u=await cl.use('user');
+  if(u&&(await u.canEdit())){S.canEdit=true;if(S.screen==='lock'&&!document.getElementById('pw').value)draw()}}catch(e){}})();
+if(window.__TEST)window.__T={SECS:SECS,bank:bank,sha:sha,pairs:pairs,ar:ar};
+})();
+</script>
+
+</body></html>
